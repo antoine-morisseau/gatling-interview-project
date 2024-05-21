@@ -3,12 +3,13 @@ package io.gatling.interview.repository
 import cats.effect._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros._
+import io.gatling.interview.api.ComputerNotFoundError
 import io.gatling.interview.model.Computer
 
 import java.nio.file.{Files, Path, Paths}
 
 object ComputerRepository {
-  val DefaultComputersFilePath: Path = Paths.get("computers.json")
+  private val DefaultComputersFilePath: Path = Paths.get("computers.json")
 
   private implicit val computersCodec: JsonValueCodec[List[Computer]] = JsonCodecMaker.make
 
@@ -25,7 +26,14 @@ class ComputerRepository[F[_]: Async](filePath: Path) {
       Async[F].delay(readFromStream[List[Computer]](stream))
     }
 
-  def fetch(id: Long): F[Computer] = ???
+  def fetch(id: Long): F[Computer] = {
+    Async[F].flatMap(fetchAll()) { allComputers =>
+      Async[F].fromOption(
+        allComputers.find(_.id == id),
+        ComputerNotFoundError(s"Computer with id: $id doesn't exist")
+      )
+    }
+  }
 
   def insert(computer: Computer): F[Unit] = ???
 }
