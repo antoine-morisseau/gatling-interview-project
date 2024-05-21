@@ -35,5 +35,13 @@ class ComputerRepository[F[_]: Async](filePath: Path) {
     }
   }
 
-  def insert(computer: Computer): F[Unit] = ???
+  def insert(computer: Computer): F[Unit] = {
+    Async[F].map(fetchAll()) { allComputers =>
+      Resource
+        .fromAutoCloseable(Async[F].delay(Files.newOutputStream(filePath)))
+        .use { stream =>
+          Async[F].delay(writeToStream[List[Computer]](allComputers :+ computer, stream))
+        }
+    }
+  }
 }

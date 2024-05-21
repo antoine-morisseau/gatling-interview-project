@@ -76,6 +76,16 @@ class ComputerRepositorySpec extends AsyncFlatSpec with AsyncIOSpec with Matcher
       .assertThrows[ComputerNotFoundError]
   }
 
+  "ComputerRepository#insert" should "insert a computer" in {
+    val computer =
+      Computer(id = 90, name = "MacBook Pro 15.4 inch", introduced = None, discontinued = None)
+
+    temporaryFileResource("computers/computers.json").use { computersFilePath =>
+      val repository = new ComputerRepository[IO](computersFilePath)
+      repository.insert(computer)
+    }.assertNoException
+  }
+
   private def temporaryFileResource(path: String): Resource[IO, Path] =
     Resource(
       for {
